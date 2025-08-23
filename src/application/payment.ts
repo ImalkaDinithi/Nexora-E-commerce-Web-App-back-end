@@ -4,6 +4,9 @@ import Order from "../infrastructure/db/entities/Order";
 import stripe from "../infrastructure/stripe";
 import Product from "../infrastructure/db/entities/Product";
 
+import { products as allProducts } from "../data";
+
+
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 const FRONTEND_URL = process.env.FRONTEND_URL as string;
 
@@ -84,30 +87,41 @@ export const handleWebhook = async (req: Request, res: Response) => {
 };
 
 export const createCheckoutSession = async (req: Request, res: Response) => {
-  const orderId = req.body.orderId;
-  console.log("body", req.body);
-  const order = await Order.findById(orderId).populate<{
-    items: { productId: Product; quantity: number }[];
-  }>("items.productId");
+  try {
+    const orderId = req.body.orderId;
+    console.log("body", req.body);
 
-  if (!order) {
-    throw new Error("Order not found");
+    const order = await Order.findById(orderId);
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Map order items to line items using data.ts products
+    const line_items = order.items.map((item) => {
+      const product = allProducts.find((p) => p._id === item.productId.toString());
+      if (!product) throw new Error(`Product not found: ${item.productId}`);
+      return {
+        price: product.stripePriceId,
+        quantity: item.quantity,
+      };
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      ui_mode: "embedded",
+      line_items,
+      mode: "payment",
+      return_url: `${FRONTEND_URL}/shop/complete?session_id={CHECKOUT_SESSION_ID}`,
+      metadata: {
+        orderId,
+      },
+    });
+
+
+    res.status(200).json({ clientSecret: session.client_secret });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: (error as Error).message });
   }
-
-  const session = await stripe.checkout.sessions.create({
-    ui_mode: "embedded",
-    line_items: order.items.map((item) => ({
-      price: item.productId.stripePriceId,
-      quantity: item.quantity,
-    })),
-    mode: "payment",
-    return_url: `${FRONTEND_URL}/shop/complete?session_id={CHECKOUT_SESSION_ID}`,
-    metadata: {
-      orderId: req.body.orderId,
-    },
-  });
-
-  res.send({ clientSecret: session.client_secret });
 };
 
 export const retrieveSessionStatus = async (req: Request, res: Response) => {

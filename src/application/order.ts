@@ -5,24 +5,55 @@ import NotFoundError from "../domain/errors/not-found-error";
 import UnauthorizedError from "../domain/errors/unauthorized-error";
 import { getAuth } from "@clerk/express";
 
+import { products as allProducts } from "../data"; // import your products array
+
+
+import Product from "../infrastructure/db/entities/Product";
+
 // Create new order
 const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = req.body;
     const { userId } = getAuth(req);
 
+    if (!data.orderItems || data.orderItems.length === 0) {
+      return res.status(400).json({ message: "Order items are required" });
+    }
+
+    // Save shipping address
     const address = await Address.create(data.shippingAddress);
-    await Order.create({
-      addressId: address._id,
-      items: data.orderItems,
-      userId: userId,
+
+    // Calculate total price based on products array
+    let totalPrice = 0;
+    const itemsWithPrice = data.orderItems.map((item: { productId: string; quantity: number }) => {
+      const product = allProducts.find(p => p._id === item.productId);
+      if (!product) throw new Error(`Product not found: ${item.productId}`);
+      const quantity = Number(item.quantity) || 0;
+      totalPrice += product.price * quantity;
+      return {
+        productId: product._id,
+        quantity,
+      };
     });
 
-    res.status(201).send({ message: "Order created successfully" });
+    if (totalPrice <= 0) {
+      throw new Error("Total price must be greater than zero");
+    }
+
+    // Create order in DB
+    const order = await Order.create({
+      addressId: address._id,
+      items: itemsWithPrice,
+      userId,
+      totalPrice,
+    });
+
+    res.status(201).json({ message: "Order created successfully", order });
   } catch (error) {
     next(error);
   }
 };
+
 
 // Get single order
 const getOrder = async (req: Request, res: Response, next: NextFunction) => {
@@ -55,7 +86,7 @@ const getUserOrders = async (req: Request, res: Response, next: NextFunction) =>
   } catch (error) {
     next(error);
   }
-};  
+};
 
 // Get all orders (admin only)
 const getAllOrders = async (req: Request, res: Response, next: NextFunction) => {
