@@ -1,4 +1,4 @@
-import Product from "../infrastructure/db/entities/Product";
+import {Product} from "../infrastructure/db/entities/Product";
 import ValidationError from "../domain/errors/validation-error";
 import NotFoundError from "../domain/errors/not-found-error";
 
@@ -8,6 +8,9 @@ import { randomUUID } from "crypto";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import S3 from "../infrastructure/s3";
+import mongoose from "mongoose";
+
+import Category from "../infrastructure/db/entities/category";
 
 const getAllProducts = async (
   req: Request,
@@ -15,14 +18,33 @@ const getAllProducts = async (
   next: NextFunction
 ) => {
   try {
-    const categoryId = req.query.categoryId;
-    if (categoryId) {
-      const products = await Product.find({ categoryId });
-      res.json(products);
-    } else {
-      const products = await Product.find();
-      res.json(products);
+    const { color, sort } = req.query;
+    const { category: categorySlug } = req.params;
+    const query: any = {};
+
+    // Filter by category
+    if (categorySlug) {
+      const categoryDoc = await Category.findOne({ slug: categorySlug });
+      if (!categoryDoc) return res.json([]); // no products if category not found
+      query.categoryId = categoryDoc._id;
     }
+    
+     // Filter by color
+    if (color && typeof color === "string" && mongoose.Types.ObjectId.isValid(color)) {
+      query.colorId = color;
+    }
+
+    // Sorting
+    const sortOption: any = {};
+    if (sort === "price_asc") sortOption.price = 1;
+    else if (sort === "price_desc") sortOption.price = -1;
+
+    const products = await Product.find(query)
+      .populate("colorId")
+      .populate("categoryId")
+      .sort(sortOption);
+
+    res.json(products);
   } catch (error) {
     next(error);
   }
@@ -86,7 +108,11 @@ const getProductById = async (
   next: NextFunction
 ) => {
   try {
-    const product = await Product.findById(req.params.id).populate("reviews");
+    const product = await Product.findById(req.params.id)
+      .populate("reviews")
+      .populate("colorId")     // Poplate colorId for more info
+      .populate("categoryId"); // Populate category for more info
+
     if (!product) {
       throw new NotFoundError("Product not found");
     }

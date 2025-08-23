@@ -5,6 +5,7 @@ import NotFoundError from "../domain/errors/not-found-error";
 import UnauthorizedError from "../domain/errors/unauthorized-error";
 import { getAuth } from "@clerk/express";
 
+// Create new order
 const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = req.body;
@@ -17,12 +18,13 @@ const createOrder = async (req: Request, res: Response, next: NextFunction) => {
       userId: userId,
     });
 
-    res.status(201).send();
+    res.status(201).send({ message: "Order created successfully" });
   } catch (error) {
     next(error);
   }
 };
 
+// Get single order
 const getOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = "123";
@@ -44,4 +46,25 @@ const getOrder = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createOrder, getOrder };
+// Get all orders for logged-in user
+const getUserOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = getAuth(req);
+    const orders = await Order.find({ userId }).populate("products.productId");
+    res.json(orders);
+  } catch (error) {
+    next(error);
+  }
+};  
+
+// Get all orders (admin only)
+const getAllOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orders = await Order.find().populate("products.productId").populate("userId");
+    res.json(orders);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { createOrder, getOrder, getUserOrders, getAllOrders };

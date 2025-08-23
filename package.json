@@ -1,10 +1,13 @@
 {
   "name": "fed-2-back-end",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend for the Fed-2 project, managing products and colors.",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts"
+    "dev": "nodemon src/index.ts",
+    "build": "npm install && tsc",
+    "start": "node ./dist/index.js",
+    "seed": "ts-node src/infrastructure/db/seed.ts"
   },
   "author": "",
   "license": "ISC",
@@ -12,10 +15,12 @@
     "@aws-sdk/client-s3": "^3.850.0",
     "@aws-sdk/s3-request-presigner": "^3.850.0",
     "@clerk/express": "^1.7.13",
+    "@types/stripe": "^8.0.416",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
-    "mongoose": "^8.15.1",
+    "mongoose": "^8.17.1",
+    "stripe": "^18.4.0",
     "zod": "^3.25.74"
   },
   "devDependencies": {

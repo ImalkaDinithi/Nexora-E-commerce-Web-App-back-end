@@ -20,6 +20,8 @@ productRouter
 
   productRouter.get("/search", getProductsForSearchQuery);
 
+  productRouter.get("/category/:category", getAllProducts);  
+
 productRouter
   .route("/:id")
   .get(getProductById)

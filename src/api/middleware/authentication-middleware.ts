@@ -3,6 +3,7 @@ import UnauthorizedError from "../../domain/errors/unauthorized-error";
 import { clerkClient, getAuth } from "@clerk/express";
 
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  const auth = getAuth(req);
   if (!req?.auth) {
     //! req.auth will only be defined if the request sends a valid session token
     throw new UnauthorizedError("Unauthorized");

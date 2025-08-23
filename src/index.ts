@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+
 import productRouter from "./api/product";
 import categoryRouter from "./api/category";
 import reviewRouter from "./api/review";
@@ -8,14 +9,24 @@ import globalErrorHandlingMiddleware from "./api/middleware/global-error-handlin
 import cors from "cors";
 import { orderRouter } from "./api/order";
 import { clerkMiddleware } from "@clerk/express";
+import { paymentsRouter } from "./api/payment";
+import bodyParser from "body-parser";
+import { handleWebhook } from "./application/payment";
+import { salesRouter } from "./api/sales";
 
 const app = express();
 
+app.use(clerkMiddleware());
+app.use(cors({ origin: process.env.FRONTEND_URL }));
+
+app.post(
+  "/api/stripe/webhook",
+  bodyParser.raw({ type: "application/json" }),
+  handleWebhook
+);
+
 // Middleware to parse JSON bodies
 app.use(express.json()); //It conversts the incomign json payload of a  request into a javascript object found in req.body
-
-app.use(clerkMiddleware());
-app.use(cors({ origin: "http://localhost:5173" }));
 
 // app.use((req, res, next) => {
 //   console.log("Hello from pre-middleware");
@@ -26,12 +37,14 @@ app.use("/api/products", productRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/orders", orderRouter);
+app.use("/api/payments", paymentsRouter);
+app.use("/api/sales", salesRouter);
 
 app.use(globalErrorHandlingMiddleware);
 
 connectDB();
 
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
