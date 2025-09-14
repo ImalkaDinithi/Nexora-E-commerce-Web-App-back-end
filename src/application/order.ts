@@ -81,7 +81,7 @@ const getOrder = async (req: Request, res: Response, next: NextFunction) => {
 const getUserOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId } = getAuth(req);
-    const orders = await Order.find({ userId }).populate("products.productId");
+    const orders = await Order.find({ userId }).populate("items.productId");
     res.json(orders);
   } catch (error) {
     next(error);
@@ -91,7 +91,7 @@ const getUserOrders = async (req: Request, res: Response, next: NextFunction) =>
 // Get all orders (admin only)
 const getAllOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const orders = await Order.find().populate("products.productId").populate("userId");
+    const orders = await Order.find().populate("items.productId").populate("userId");
     res.json(orders);
   } catch (error) {
     next(error);

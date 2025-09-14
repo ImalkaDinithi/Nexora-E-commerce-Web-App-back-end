@@ -20,7 +20,7 @@ productRouter
 
   productRouter.get("/search", getProductsForSearchQuery);
 
-  productRouter.get("/category/:category", getAllProducts);  
+  productRouter.get(["/shop", "/shop/:category"], getAllProducts); 
 
 productRouter
   .route("/:id")

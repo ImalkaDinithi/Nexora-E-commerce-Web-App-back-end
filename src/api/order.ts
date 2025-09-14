@@ -6,13 +6,16 @@ import { isAdmin } from "./middleware/authorization-middleware";
 export const orderRouter = express.Router();
 
 // Create a new order
-orderRouter.route("/").post(isAuthenticated, createOrder);
+orderRouter.route("/").post( createOrder);
 
-// Get a single order by ID
-orderRouter.route("/:id").get(getOrder);
+// Admin can view all orders
+orderRouter.get("/", isAuthenticated, isAdmin, getAllOrders);
 
 // Users can view their own orders
 orderRouter.get("/my-orders", isAuthenticated, getUserOrders);
 
-// Admin can view all orders
-orderRouter.get("/", isAuthenticated, isAdmin, getAllOrders);
+// Get a single order by ID
+orderRouter.route("/:id").get(isAuthenticated, getOrder);
+
+
+

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 interface IColor extends Document {
   name: string;
@@ -14,6 +14,7 @@ interface IProduct extends Document {
   name: string;
   price: number;
   colorId: IColor["_id"];
+  reviews: Types.ObjectId[];
 }
 
 const productSchema = new mongoose.Schema({
@@ -42,22 +43,23 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  description: {  
+  description: {
     type: String,
     required: true,
   },
-  reviews: {
-    type: [mongoose.Schema.Types.ObjectId],
+  reviews: [{                     
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Review",
     default: [],
+  }],
+  colorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Color",
+    required: true
   },
-  colorId: { 
-    type: Schema.Types.ObjectId, 
-    ref: "Color", 
-    required: true },
 });
 
 const Product = mongoose.model<IProduct>("Product", productSchema);
 
 export default Product;
-export {Product, Color };
+export { Product, Color };
