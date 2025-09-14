@@ -5,7 +5,7 @@ import NotFoundError from "../domain/errors/not-found-error";
 import UnauthorizedError from "../domain/errors/unauthorized-error";
 import { getAuth } from "@clerk/express";
 
-import { products as allProducts } from "../data"; // import your products array
+//import { products as allProducts } from "../data"; // import your products array
 
 
 import Product from "../infrastructure/db/entities/Product";
@@ -23,16 +23,24 @@ const createOrder = async (req: Request, res: Response, next: NextFunction) => {
     // Save shipping address
     const address = await Address.create(data.shippingAddress);
 
-    // Calculate total price based on products array
+    // Extract productIds from order items
+    const productIds = data.orderItems.map((item: { productId: string }) => item.productId);
+
+    // Fetch all products in a single query
+    const products = await Product.find({ _id: { $in: productIds } });
+
     let totalPrice = 0;
     const itemsWithPrice = data.orderItems.map((item: { productId: string; quantity: number }) => {
-      const product = allProducts.find(p => p._id === item.productId);
+      const product = products.find((p: any) => p._id.toString() === item.productId);
       if (!product) throw new Error(`Product not found: ${item.productId}`);
+
       const quantity = Number(item.quantity) || 0;
       totalPrice += product.price * quantity;
+
       return {
         productId: product._id,
         quantity,
+        stripePriceId: product.stripePriceId, // keep for Stripe checkout
       };
     });
 
@@ -53,6 +61,7 @@ const createOrder = async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 };
+
 
 
 // Get single order

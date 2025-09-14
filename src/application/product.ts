@@ -12,24 +12,21 @@ import mongoose from "mongoose";
 
 import Category from "../infrastructure/db/entities/category";
 
-const getAllProducts = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { color, sort } = req.query;
-    const { category: categorySlug } = req.params;
+    const { color, sort, categoryId, categorySlug } = req.query;
     const query: any = {};
 
-    // Filter by category
-    if (categorySlug) {
+    // Category filter (slug or id)
+    if (categoryId && typeof categoryId === "string") {
+      query.categoryId = categoryId;
+    } else if (categorySlug && typeof categorySlug === "string") {
       const categoryDoc = await Category.findOne({ slug: categorySlug });
       if (!categoryDoc) return res.json([]); // no products if category not found
       query.categoryId = categoryDoc._id;
     }
-    
-     // Filter by color
+
+    // Color filter
     if (color && typeof color === "string" && mongoose.Types.ObjectId.isValid(color)) {
       query.colorId = color;
     }

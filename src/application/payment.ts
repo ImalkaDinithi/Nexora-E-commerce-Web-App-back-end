@@ -89,16 +89,15 @@ export const handleWebhook = async (req: Request, res: Response) => {
 export const createCheckoutSession = async (req: Request, res: Response) => {
   try {
     const orderId = req.body.orderId;
-    console.log("body", req.body);
-
     const order = await Order.findById(orderId);
-    if (!order) {
-      throw new Error("Order not found");
-    }
+    if (!order) throw new Error("Order not found");
 
-    // Map order items to line items using data.ts products
-    const line_items = order.items.map((item) => {
-      const product = allProducts.find((p) => p._id === item.productId.toString());
+    // Fetch products from MongoDB instead of using allProducts
+    const productIds = order.items.map(item => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    const line_items = order.items.map(item => {
+      const product = products.find(p => p._id.toString() === item.productId.toString());
       if (!product) throw new Error(`Product not found: ${item.productId}`);
       return {
         price: product.stripePriceId,
@@ -111,11 +110,8 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
       line_items,
       mode: "payment",
       return_url: `${FRONTEND_URL}/shop/complete?session_id={CHECKOUT_SESSION_ID}`,
-      metadata: {
-        orderId,
-      },
+      metadata: { orderId },
     });
-
 
     res.status(200).json({ clientSecret: session.client_secret });
   } catch (error) {

@@ -10,11 +10,16 @@ const ColorSchema: Schema = new Schema({
 
 const Color = mongoose.model<IColor>("Color", ColorSchema);
 
-interface IProduct extends Document {
+export interface IProduct extends Document {
+  categoryId: Types.ObjectId;
   name: string;
   price: number;
-  colorId: IColor["_id"];
+  stripePriceId: string; // ✅ now TypeScript knows about it
+  image: string;
+  stock: number;
+  description: string;
   reviews: Types.ObjectId[];
+  colorId: IColor["_id"];
 }
 
 const productSchema = new mongoose.Schema({
