@@ -94,7 +94,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
 
     // Fetch products from MongoDB instead of using allProducts
     const productIds = order.items.map(item => item.productId);
-    const products = await Product.find({ _id: { $in: productIds } });
+    const products: Product[] = await Product.find({ _id: { $in: productIds } }) as Product[];
 
     const line_items = order.items.map(item => {
       const product = products.find(p => p._id.toString() === item.productId.toString());
